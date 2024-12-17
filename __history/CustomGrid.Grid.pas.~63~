@@ -3,48 +3,46 @@ unit CustomGrid.Grid;
 interface
 
 uses
-  System.Generics.Collections, Vcl.Forms, CustomGrid.Row;
+  System.Generics.Collections, Vcl.Forms, CustomGrid.Row, CustomGrid.Types;
 
 type
-  TListItens = TList<TFrame>;
 
   TGrid = class
   private
     FCount: Integer;
     FItens: TListItens;
-    FRows: TList<TRow>;
+    FRows: TObjectList<TRow>;
     FContainer: TScrollBox;
     FRowHeight: Integer;
     FAutoSize: Boolean;
     FItensProps: TItemProps;
     FhasItemPropsLoad: Boolean;
     FLazyLoading: Boolean;
-    FVisible: Boolean;
     FLoadingScreen: TForm;
     FSettingUpLoading: Boolean;
     function ItensPerRow: Integer;
     function RownsNeeded: Integer;
     function GetNextRowAvailable: TRow;
-    procedure ClearItens;
-    procedure ClearRows;
-    procedure ClearInvalidItens;
-    procedure RenderList;
     function GetNewRow: TRow;
     procedure CreateNescessariesRows;
     procedure OrganizeContainer;
-    procedure ClearEmptyRows;
     procedure LoadItemProps;
     procedure StartLoading;
     procedure StopLoading;
+    function GetVisbile: Boolean;
+    procedure SetVisible(const Value: Boolean);
   public
     constructor Create(AContainer: TScrollBox);
     destructor Destroy; override;
     procedure AddItem(AItem: TFrame);
-    procedure AddListItem(AList: TListItens);
+    procedure Clear;
+    procedure Render;
     property AutoSize: Boolean read FAutoSize write FAutoSize;
     property LazyLoading: Boolean read FLazyLoading write FLazyLoading;
-    property Visible: Boolean read FVisible write FVisible;
+    property Visible: Boolean read GetVisbile write SetVisible;
     property LoadingScreen: TForm read FLoadingScreen write FLoadingScreen;
+    property Itens: TListItens read FItens write FItens;
+
   end;
 
 implementation
@@ -57,93 +55,31 @@ uses
 procedure TGrid.AddItem(AItem: TFrame);
 begin
   FItens.Add(AItem);
-
-  RenderList;
 end;
 
-procedure TGrid.AddListItem(AList: TListItens);
+procedure TGrid.Clear;
 begin
-  FItens := AList;
-  RenderList;
-end;
-
-procedure TGrid.ClearEmptyRows;
-var
-  I: Integer;
-  FEmptyRow: TRow;
-begin
-  if FRows.Count = 0 then
-    Exit;
-
-  for I := 0 to FRows.Count - 1 do
-  begin
-    if FRows[I].isEmpty then
-    begin
-      FEmptyRow := FRows[I];
-      FRows.Remove(FEmptyRow);
-      FEmptyRow.Free;
-    end;
-
-  end;
-
-end;
-
-procedure TGrid.ClearInvalidItens;
-var
-  I: Integer;
-begin
-  for I := 0 to FItens.Count - 1 do
-  begin
-    if not Assigned(FItens[I]) then
-      FItens.Remove(FItens[I]);
-  end;
-end;
-
-procedure TGrid.ClearItens;
-var
-  I: Integer;
-begin
-  for I := 0 to FItens.Count - 1 do
-  begin
-    if Assigned(FItens[I]) then
-      FItens[I].Free
-  end;
+  StartLoading;
+  Application.ProcessMessages;
 
   FItens.Clear;
-end;
-
-procedure TGrid.ClearRows;
-var
-  I: Integer;
-begin
-
-  if FRows.Count = 0 then
-    Exit;
-
-  for I := 0 to FRows.Count - 1 do
-  begin
-    if Assigned(FRows[I]) then
-    BEGIN
-      FRows[I].Free;
-    END;
-  end;
-
   FRows.Clear;
 
+  Application.ProcessMessages;
+  StopLoading;
 end;
 
 constructor TGrid.Create(AContainer: TScrollBox);
 begin
   FContainer := AContainer;
-  FItens := TListItens.Create;
-  FRows := TList<TRow>.Create;
+
+  FItens := TListItens.Create(True);
+  FRows := TObjectList<TRow>.Create(True);
 
   FAutoSize := False;
   FLazyLoading := False;
   FhasItemPropsLoad := False;
-  FVisible := True;
-
-  FContainer.Visible := FVisible;
+  FLoadingScreen := nil;
 end;
 
 procedure TGrid.CreateNescessariesRows;
@@ -162,23 +98,23 @@ begin
 
       FContainer.InsertControl(FRow.Row);
 
-      if not LazyLoading then
-        OrganizeContainer;
-
     end;
+
+    if not LazyLoading then
+      OrganizeContainer;
   end;
 end;
 
 destructor TGrid.Destroy;
 begin
   inherited;
-  ClearItens;
-  ClearRows;
   FItens.Free;
-  FRows.Free;
 
   if Assigned(FLoadingScreen) then
     FLoadingScreen.Free;
+
+  FRows.Free;
+
 end;
 
 function TGrid.GetNextRowAvailable: TRow;
@@ -202,6 +138,11 @@ begin
   end;
 end;
 
+function TGrid.GetVisbile: Boolean;
+begin
+  Result := FContainer.Visible;
+end;
+
 function TGrid.GetNewRow: TRow;
 begin
   if FRowHeight = 0 then
@@ -223,6 +164,7 @@ end;
 
 procedure TGrid.StartLoading;
 begin
+  Visible := False;
   if not Assigned(FLoadingScreen) then
     Exit;
 
@@ -236,7 +178,6 @@ begin
       Top := FContainer.Top;
       Width := FContainer.Width;
       Height := FContainer.Height;
-      Position := poScreenCenter;
     end;
 
     FSettingUpLoading := True;
@@ -247,6 +188,8 @@ end;
 
 procedure TGrid.StopLoading;
 begin
+  Visible := True;
+
   if Assigned(FLoadingScreen) then
     FLoadingScreen.Close;
 end;
@@ -257,7 +200,6 @@ var
     NumItens: Integer;
 begin
 
-  // Margins
   if AutoSize and FhasItemPropsLoad then
     Exit;
 
@@ -295,16 +237,14 @@ begin
 
 end;
 
-procedure TGrid.RenderList;
+procedure TGrid.Render;
 var
   I, StartIndex, EndIndex, NumItens, TotalItems: Integer;
   X: Integer;
 begin
   StartLoading;
-  FContainer.Visible := False;
+  Application.ProcessMessages;
 
-  ClearInvalidItens;
-  ClearRows;
   CreateNescessariesRows;
   LoadItemProps;
 
@@ -331,7 +271,6 @@ begin
     end;
   end;
 
-  FContainer.Visible := True;
   Application.ProcessMessages;
   StopLoading;
 end;
@@ -339,6 +278,11 @@ end;
 function TGrid.RownsNeeded: Integer;
 begin
   Result := Ceil(FItens.Count / ItensPerRow);
+end;
+
+procedure TGrid.SetVisible(const Value: Boolean);
+begin
+  FContainer.Visible := Value;
 end;
 
 end.

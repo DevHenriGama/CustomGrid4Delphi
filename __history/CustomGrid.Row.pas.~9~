@@ -146,9 +146,8 @@ end;
 destructor TRow.Destroy;
 begin
 
-  inherited;
-  FItems.Free;
   FRow.Free;
+  inherited;
 end;
 
 function TRow.hasInRow(AItem: TFrame): Boolean;

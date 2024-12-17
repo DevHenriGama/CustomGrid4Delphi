@@ -21,6 +21,8 @@ type
 
   const
     MinMargin: Integer = 5;
+
+    procedure Debug;
     procedure Initialize;
     function ItemWidth(AItem: TFrame;
       const AWithMargins: Boolean = False): Integer;
@@ -128,7 +130,15 @@ begin
 end;
 
 procedure TRow.Clear;
+var
+  I: Integer;
 begin
+  for I := 0 to FItems.Count - 1 do
+  begin
+    if Assigned(FItems[I]) then
+      FItems[I].Parent := nil;
+  end;
+
   FItems.Clear;
 end;
 
@@ -143,12 +153,17 @@ begin
   Initialize;
 end;
 
-destructor TRow.Destroy;
+procedure TRow.Debug;
 begin
 
-  inherited;
+end;
+
+destructor TRow.Destroy;
+begin
+  Clear;
   FItems.Free;
   FRow.Free;
+  inherited;
 end;
 
 function TRow.hasInRow(AItem: TFrame): Boolean;
