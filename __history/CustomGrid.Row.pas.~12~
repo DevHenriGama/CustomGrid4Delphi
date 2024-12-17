@@ -12,7 +12,7 @@ type
 
   TRow = class
   private
-    FItems: TObjectList<TFrame>;
+    FItems: TList<TFrame>;
     FRow: TPanel;
     FContainer: TScrollBox;
     FHeight: Integer;
@@ -137,7 +137,7 @@ begin
   FRow := TPanel.Create(nil);
   FRow.Height := AHeight;
 
-  FItems := TObjectList<TFrame>.Create(True);
+  FItems := TList<TFrame>.Create;
   FContainer := AContainer;
 
   Initialize;
@@ -145,8 +145,9 @@ end;
 
 destructor TRow.Destroy;
 begin
-  FRow.Free;
   inherited;
+  FItems.Free;
+  FRow.Free;
 end;
 
 function TRow.hasInRow(AItem: TFrame): Boolean;

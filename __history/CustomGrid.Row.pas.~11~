@@ -12,7 +12,7 @@ type
 
   TRow = class
   private
-    FItems: TObjectList<TFrame>;
+    FItems: TList<TFrame>;
     FRow: TPanel;
     FContainer: TScrollBox;
     FHeight: Integer;
@@ -21,8 +21,6 @@ type
 
   const
     MinMargin: Integer = 5;
-
-    procedure Debug;
     procedure Initialize;
     function ItemWidth(AItem: TFrame;
       const AWithMargins: Boolean = False): Integer;
@@ -139,23 +137,18 @@ begin
   FRow := TPanel.Create(nil);
   FRow.Height := AHeight;
 
-  FItems := TObjectList<TFrame>.Create(True);
+  FItems := TList<TFrame>.Create;
   FContainer := AContainer;
 
   Initialize;
 end;
 
-procedure TRow.Debug;
-begin
-
-end;
-
 destructor TRow.Destroy;
 begin
-  Clear;
+
+  inherited;
   FItems.Free;
   FRow.Free;
-  inherited;
 end;
 
 function TRow.hasInRow(AItem: TFrame): Boolean;

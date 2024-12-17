@@ -21,7 +21,6 @@ type
     FSettingUpLoading: Boolean;
     function ItensPerRow: Integer;
     function RownsNeeded: Integer;
-    function GetNextRowAvailable: TRow;
     function GetNewRow: TRow;
     procedure CreateNescessariesRows;
     procedure OrganizeContainer;
@@ -61,6 +60,7 @@ begin
   StartLoading;
   Application.ProcessMessages;
 
+  FItens.Clear;
   FRows.Clear;
 
   Application.ProcessMessages;
@@ -106,34 +106,12 @@ end;
 destructor TGrid.Destroy;
 begin
   inherited;
+
   FItens.Free;
+  FRows.Free;
 
   if Assigned(FLoadingScreen) then
     FLoadingScreen.Free;
-
-  FRows.Free;
-
-end;
-
-function TGrid.GetNextRowAvailable: TRow;
-var
-  I: Integer;
-begin
-  if not AutoSize then
-  begin
-    Result := FRows.Last;
-  end
-  else
-  begin
-    for I := 0 to FRows.Count - 1 do
-    begin
-      if FRows[I].CanAddItem(FItens.Last) then
-
-        Result := FRows[I]
-      else
-        FRows[I].AutoSize;
-    end;
-  end;
 end;
 
 function TGrid.GetCount: Integer;
@@ -167,23 +145,29 @@ end;
 
 procedure TGrid.StartLoading;
 begin
+  // Desabilita o Container
   Visible := False;
+
   if not Assigned(FLoadingScreen) then
     Exit;
 
+  // Configura o LoadingScreen
   if not FSettingUpLoading then
   begin
     with FLoadingScreen do
     begin
       BorderStyle := bsNone;
       Caption := 'Loading...';
-      Left := FContainer.Left;
-      Top := FContainer.Top;
-      Width := FContainer.Width;
-      Height := FContainer.Height;
     end;
-
     FSettingUpLoading := True;
+  end;
+
+  with FLoadingScreen do
+  begin
+    Left := FContainer.Left;
+    Top := FContainer.Top;
+    Width := FContainer.Width;
+    Height := FContainer.Height;
   end;
 
   FLoadingScreen.Show;

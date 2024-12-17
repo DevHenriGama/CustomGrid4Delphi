@@ -3,13 +3,13 @@ unit CustomGrid.Grid;
 interface
 
 uses
-  System.Generics.Collections, Vcl.Forms, CustomGrid.Row;
+  System.Generics.Collections, Vcl.Forms, CustomGrid.Row, CustomGrid.Types;
 
 type
+
   TGrid = class
   private
-    FCount: Integer;
-    FItens: TObjectList<TFrame>;
+    FItens: TListItens;
     FRows: TObjectList<TRow>;
     FContainer: TScrollBox;
     FRowHeight: Integer;
@@ -30,6 +30,7 @@ type
     procedure StopLoading;
     function GetVisbile: Boolean;
     procedure SetVisible(const Value: Boolean);
+    function GetCount: Integer;
   public
     constructor Create(AContainer: TScrollBox);
     destructor Destroy; override;
@@ -40,6 +41,7 @@ type
     property LazyLoading: Boolean read FLazyLoading write FLazyLoading;
     property Visible: Boolean read GetVisbile write SetVisible;
     property LoadingScreen: TForm read FLoadingScreen write FLoadingScreen;
+    property Count: Integer read GetCount;
   end;
 
 implementation
@@ -70,7 +72,7 @@ constructor TGrid.Create(AContainer: TScrollBox);
 begin
   FContainer := AContainer;
 
-  FItens := TObjectList<TFrame>.Create(True);
+  FItens := TListItens.Create(True);
   FRows := TObjectList<TRow>.Create(True);
 
   FAutoSize := False;
@@ -106,11 +108,10 @@ destructor TGrid.Destroy;
 begin
   inherited;
   FItens.Free;
-  if Assigned(FLoadingScreen) then
-    FLoadingScreen.Free;
-
   FRows.Free;
 
+  if Assigned(FLoadingScreen) then
+    FLoadingScreen.Free;
 end;
 
 function TGrid.GetNextRowAvailable: TRow;
@@ -132,6 +133,11 @@ begin
         FRows[I].AutoSize;
     end;
   end;
+end;
+
+function TGrid.GetCount: Integer;
+begin
+  Result := FItens.Count;
 end;
 
 function TGrid.GetVisbile: Boolean;
@@ -160,23 +166,29 @@ end;
 
 procedure TGrid.StartLoading;
 begin
+  // Desabilita o Container
   Visible := False;
+
   if not Assigned(FLoadingScreen) then
     Exit;
 
+  // Configura o LoadingScreen
   if not FSettingUpLoading then
   begin
     with FLoadingScreen do
     begin
       BorderStyle := bsNone;
       Caption := 'Loading...';
-      Left := FContainer.Left;
-      Top := FContainer.Top;
-      Width := FContainer.Width;
-      Height := FContainer.Height;
     end;
-
     FSettingUpLoading := True;
+  end;
+
+  with FLoadingScreen do
+  begin
+    Left := FContainer.Left;
+    Top := FContainer.Top;
+    Width := FContainer.Width;
+    Height := FContainer.Height;
   end;
 
   FLoadingScreen.Show;

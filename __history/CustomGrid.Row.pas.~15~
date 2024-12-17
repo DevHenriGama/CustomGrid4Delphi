@@ -14,12 +14,21 @@ type
   TRow = class
   private
     FRow: TPanel;
+    FContainer: TScrollBox;
+    FHeight: Integer;
+    FWasAutoSized: Boolean;
+    FItemProps: TItemProps;
+
+  const
+    MinMargin: Integer = 5;
     procedure Initialize;
   public
     constructor Create(AContainer: TScrollBox; AHeight: Integer);
     destructor Destroy; override;
     function Row: TPanel;
     function AddItem(AItem: TFrame; AProps: TItemProps): Boolean;
+    property ItemProps: TItemProps read FItemProps write FItemProps;
+
   end;
 
 implementation
@@ -31,6 +40,8 @@ uses
 
 function TRow.AddItem(AItem: TFrame; AProps: TItemProps): Boolean;
 begin
+
+  FItemProps := AProps;
   AItem.Margins.Left := AProps.MarginLeft;
   AItem.Margins.Right := AProps.MarginRight;
 
@@ -41,6 +52,9 @@ constructor TRow.Create(AContainer: TScrollBox; AHeight: Integer);
 begin
   FRow := TPanel.Create(nil);
   FRow.Height := AHeight;
+
+  FContainer := AContainer;
+
   Initialize;
 end;
 
@@ -61,6 +75,7 @@ begin
     ParentBackground := True;
     FullRepaint := False;
   end;
+  FWasAutoSized := False;
 end;
 
 function TRow.Row: TPanel;

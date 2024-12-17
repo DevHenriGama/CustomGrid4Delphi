@@ -8,6 +8,10 @@ uses
 type
   TListItens = TObjectList<TFrame>;
 
+  TContainerProps = record
+
+  end;
+
 implementation
 
 end.

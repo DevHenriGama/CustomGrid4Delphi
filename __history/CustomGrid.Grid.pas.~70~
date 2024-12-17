@@ -9,7 +9,6 @@ type
 
   TGrid = class
   private
-    FCount: Integer;
     FItens: TListItens;
     FRows: TObjectList<TRow>;
     FContainer: TScrollBox;
@@ -32,7 +31,6 @@ type
     function GetVisbile: Boolean;
     procedure SetVisible(const Value: Boolean);
     function GetCount: Integer;
-    procedure setter(const Value: Integer);
   public
     constructor Create(AContainer: TScrollBox);
     destructor Destroy; override;
@@ -43,7 +41,7 @@ type
     property LazyLoading: Boolean read FLazyLoading write FLazyLoading;
     property Visible: Boolean read GetVisbile write SetVisible;
     property LoadingScreen: TForm read FLoadingScreen write FLoadingScreen;
-    property Count: Integer read GetCount write setter;
+    property Count: Integer read GetCount;
   end;
 
 implementation
@@ -169,7 +167,9 @@ end;
 
 procedure TGrid.StartLoading;
 begin
+  // Desabilita o Container
   Visible := False;
+
   if not Assigned(FLoadingScreen) then
     Exit;
 
@@ -283,11 +283,6 @@ end;
 function TGrid.RownsNeeded: Integer;
 begin
   Result := Ceil(FItens.Count / ItensPerRow);
-end;
-
-procedure TGrid.setter(const Value: Integer);
-begin
-
 end;
 
 procedure TGrid.SetVisible(const Value: Boolean);

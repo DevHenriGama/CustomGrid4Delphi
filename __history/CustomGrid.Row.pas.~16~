@@ -41,6 +41,9 @@ constructor TRow.Create(AContainer: TScrollBox; AHeight: Integer);
 begin
   FRow := TPanel.Create(nil);
   FRow.Height := AHeight;
+
+  FContainer := AContainer;
+
   Initialize;
 end;
 
@@ -61,6 +64,7 @@ begin
     ParentBackground := True;
     FullRepaint := False;
   end;
+  FWasAutoSized := False;
 end;
 
 function TRow.Row: TPanel;
