@@ -21,7 +21,6 @@ type
     FSettingUpLoading: Boolean;
     function ItensPerRow: Integer;
     function RownsNeeded: Integer;
-    function GetNextRowAvailable: TRow;
     function GetNewRow: TRow;
     procedure CreateNescessariesRows;
     procedure OrganizeContainer;
@@ -31,6 +30,8 @@ type
     function GetVisbile: Boolean;
     procedure SetVisible(const Value: Boolean);
     function GetCount: Integer;
+    procedure RemoverItensParents;
+    procedure ClearRows;
   public
     constructor Create(AContainer: TScrollBox);
     destructor Destroy; override;
@@ -61,11 +62,17 @@ begin
   StartLoading;
   Application.ProcessMessages;
 
+  ClearRows;
   FItens.Clear;
-  FRows.Clear;
 
   Application.ProcessMessages;
   StopLoading;
+end;
+
+procedure TGrid.ClearRows;
+begin
+  RemoverItensParents;
+  FRows.Clear;
 end;
 
 constructor TGrid.Create(AContainer: TScrollBox);
@@ -107,34 +114,14 @@ end;
 destructor TGrid.Destroy;
 begin
   inherited;
+
+  ClearRows;
+
   FItens.Free;
+  FRows.Free;
 
   if Assigned(FLoadingScreen) then
     FLoadingScreen.Free;
-
-  FRows.Free;
-
-end;
-
-function TGrid.GetNextRowAvailable: TRow;
-var
-  I: Integer;
-begin
-  if not AutoSize then
-  begin
-    Result := FRows.Last;
-  end
-  else
-  begin
-    for I := 0 to FRows.Count - 1 do
-    begin
-      if FRows[I].CanAddItem(FItens.Last) then
-
-        Result := FRows[I]
-      else
-        FRows[I].AutoSize;
-    end;
-  end;
 end;
 
 function TGrid.GetCount: Integer;
@@ -245,6 +232,14 @@ begin
     FRows[I].Row.Align := alTop;
   end;
 
+end;
+
+procedure TGrid.RemoverItensParents;
+var
+  I: Integer;
+begin
+  for I := 0 to FItens.Count - 1 do
+    FItens[I].Parent := nil;
 end;
 
 procedure TGrid.Render;

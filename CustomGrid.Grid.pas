@@ -19,6 +19,7 @@ type
     FLazyLoading: Boolean;
     FLoadingScreen: TForm;
     FSettingUpLoading: Boolean;
+    FEnable: Boolean;
     function ItensPerRow: Integer;
     function RownsNeeded: Integer;
     function GetNewRow: TRow;
@@ -30,17 +31,20 @@ type
     function GetVisbile: Boolean;
     procedure SetVisible(const Value: Boolean);
     function GetCount: Integer;
+    procedure RemoverItensParents;
+    procedure ClearRows;
   public
     constructor Create(AContainer: TScrollBox);
     destructor Destroy; override;
     procedure AddItem(AItem: TFrame);
     procedure Clear;
     procedure Render;
-    property AutoSize: Boolean read FAutoSize write FAutoSize;
-    property LazyLoading: Boolean read FLazyLoading write FLazyLoading;
     property Visible: Boolean read GetVisbile write SetVisible;
     property LoadingScreen: TForm read FLoadingScreen write FLoadingScreen;
     property Count: Integer read GetCount;
+    property Enable: Boolean read FEnable write FEnable;
+    procedure Close;
+
   end;
 
 implementation
@@ -60,11 +64,22 @@ begin
   StartLoading;
   Application.ProcessMessages;
 
+  ClearRows;
   FItens.Clear;
-  FRows.Clear;
 
   Application.ProcessMessages;
   StopLoading;
+end;
+
+procedure TGrid.ClearRows;
+begin
+  RemoverItensParents;
+  FRows.Clear;
+end;
+
+procedure TGrid.Close;
+begin
+  Enable := False;
 end;
 
 constructor TGrid.Create(AContainer: TScrollBox);
@@ -74,10 +89,9 @@ begin
   FItens := TListItens.Create(True);
   FRows := TObjectList<TRow>.Create(True);
 
-  FAutoSize := False;
-  FLazyLoading := False;
   FhasItemPropsLoad := False;
   FLoadingScreen := nil;
+  FEnable := True;
 end;
 
 procedure TGrid.CreateNescessariesRows;
@@ -98,14 +112,15 @@ begin
 
     end;
 
-    if not LazyLoading then
-      OrganizeContainer;
+    OrganizeContainer;
   end;
 end;
 
 destructor TGrid.Destroy;
 begin
   inherited;
+
+  ClearRows;
 
   FItens.Free;
   FRows.Free;
@@ -187,7 +202,7 @@ var
     NumItens: Integer;
 begin
 
-  if AutoSize and FhasItemPropsLoad then
+  if FhasItemPropsLoad then
     Exit;
 
   NumItens := ItensPerRow;
@@ -224,13 +239,27 @@ begin
 
 end;
 
+procedure TGrid.RemoverItensParents;
+var
+  I: Integer;
+begin
+  for I := 0 to FItens.Count - 1 do
+    FItens[I].Parent := nil;
+end;
+
 procedure TGrid.Render;
 var
   I, StartIndex, EndIndex, NumItens, TotalItems: Integer;
   X: Integer;
 begin
+
+  if not Enable then
+    Exit;
+
   StartLoading;
   Application.ProcessMessages;
+
+  ClearRows;
 
   CreateNescessariesRows;
   LoadItemProps;
