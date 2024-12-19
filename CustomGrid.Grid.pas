@@ -20,6 +20,7 @@ type
     FLoadingScreen: TForm;
     FSettingUpLoading: Boolean;
     FEnable: Boolean;
+    FLargeItens: Boolean;
     function ItensPerRow: Integer;
     function RownsNeeded: Integer;
     function GetNewRow: TRow;
@@ -37,14 +38,14 @@ type
     constructor Create(AContainer: TScrollBox);
     destructor Destroy; override;
     procedure AddItem(AItem: TFrame);
+    procedure Close;
     procedure Clear;
     procedure Render;
     property Visible: Boolean read GetVisbile write SetVisible;
     property LoadingScreen: TForm read FLoadingScreen write FLoadingScreen;
     property Count: Integer read GetCount;
     property Enable: Boolean read FEnable write FEnable;
-    procedure Close;
-
+    property LargeItens: Boolean read FLargeItens write FLargeItens;
   end;
 
 implementation
@@ -92,6 +93,7 @@ begin
   FhasItemPropsLoad := False;
   FLoadingScreen := nil;
   FEnable := True;
+  FLargeItens := False;
 end;
 
 procedure TGrid.CreateNescessariesRows;
@@ -205,14 +207,23 @@ begin
   if FhasItemPropsLoad then
     Exit;
 
-  NumItens := ItensPerRow;
+  if not LargeItens then
+  begin
+    NumItens := ItensPerRow;
 
-  NescessarieWidth := Floor(FItens[0].Width * NumItens);
-  AvailableSize := FContainer.Width - NescessarieWidth;
-  MarginForItem := Floor(AvailableSize / NumItens);
-  MarginForSide := Floor(MarginForItem / 2);
-  FItensProps.MarginLeft := MarginForSide;
-  FItensProps.MarginRight := MarginForSide;
+    NescessarieWidth := Floor(FItens[0].Width * NumItens);
+    AvailableSize := FContainer.Width - NescessarieWidth;
+    MarginForItem := Floor(AvailableSize / NumItens);
+    MarginForSide := Floor(MarginForItem / 2);
+
+    FItensProps.MarginLeft := MarginForSide;
+    FItensProps.MarginRight := MarginForSide;
+  end
+  else
+  begin
+    FItensProps.MarginLeft := FItens[0].Margins.Left;
+    FItensProps.MarginRight := FItens[0].Margins.Right;
+  end;
 
   FhasItemPropsLoad := True;
 end;
@@ -254,6 +265,9 @@ var
 begin
 
   if not Enable then
+    Exit;
+
+  if FItens.Count = 0 then
     Exit;
 
   StartLoading;
