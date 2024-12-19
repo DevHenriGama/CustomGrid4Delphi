@@ -128,8 +128,12 @@ begin
   if FGridRowStyle = gsInLine then
   begin
     // Rolar horizontalmente
-    NewPosition := FContainer.HorzScrollBar.Position -
-      (WheelDelta div 120 * ScrollStep);
+    if FShowScrollBars then
+      NewPosition := FContainer.HorzScrollBar.Position -
+        (WheelDelta div 120 * ScrollStep)
+    else
+      NewPosition := FContainer.HorzScrollBar.Position -
+        WheelDelta div 120 * 10;
 
     // Garantir que a posição não extrapole os limites
     NewPosition := Max(0, Min(NewPosition, FContainer.HorzScrollBar.Range -
@@ -139,8 +143,12 @@ begin
   else
   begin
     // Rolar verticalmente
-    NewPosition := FContainer.VertScrollBar.Position -
-      (WheelDelta div 120 * ScrollStep);
+    if FShowScrollBars then
+      NewPosition := FContainer.VertScrollBar.Position -
+        (WheelDelta div 120 * ScrollStep)
+    else
+      NewPosition := FContainer.VertScrollBar.Position -
+        WheelDelta div 120 * 10;
 
     // Garantir que a posição não extrapole os limites
     NewPosition := Max(0, Min(NewPosition, FContainer.VertScrollBar.Range -
@@ -385,7 +393,7 @@ procedure TCustomGrid.RenderInLineMode;
 var
   I: Integer;
 begin
-  for I := 0 to FItens.Count - 1 do
+  for I := FItens.Count - 1 downto 0 do
   begin
     FRows.First.AddItem(FItens[I], FItensProps);
   end;

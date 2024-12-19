@@ -132,8 +132,7 @@ begin
       (WheelDelta div 120 * ScrollStep);
 
     // Garantir que a posição não extrapole os limites
-    NewPosition := Max(0, Min(NewPosition, FContainer.HorzScrollBar.Range -
-      FContainer.ClientWidth));
+    NewPosition := Max(0, Min(NewPosition, FContainer.HorzScrollBar.Range - FContainer.ClientWidth));
     FContainer.HorzScrollBar.Position := NewPosition;
   end
   else
@@ -143,13 +142,13 @@ begin
       (WheelDelta div 120 * ScrollStep);
 
     // Garantir que a posição não extrapole os limites
-    NewPosition := Max(0, Min(NewPosition, FContainer.VertScrollBar.Range -
-      FContainer.ClientHeight));
+    NewPosition := Max(0, Min(NewPosition, FContainer.VertScrollBar.Range - FContainer.ClientHeight));
     FContainer.VertScrollBar.Position := NewPosition;
   end;
 
   Handled := True; // Indicar que o evento foi tratado
 end;
+
 
 constructor TCustomGrid.Create(AContainer: TScrollBox);
 begin
@@ -385,7 +384,7 @@ procedure TCustomGrid.RenderInLineMode;
 var
   I: Integer;
 begin
-  for I := 0 to FItens.Count - 1 do
+  for I := FItens.Count - 1 downto 0 do
   begin
     FRows.First.AddItem(FItens[I], FItensProps);
   end;

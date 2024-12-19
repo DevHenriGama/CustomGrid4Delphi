@@ -19,6 +19,9 @@ type
     FLazyLoading: Boolean;
     FLoadingScreen: TForm;
     FSettingUpLoading: Boolean;
+    FEnable: Boolean;
+    FLargeItens: Boolean;
+    FGridRowStyle: TGridRowStyle;
     function ItensPerRow: Integer;
     function RownsNeeded: Integer;
     function GetNewRow: TRow;
@@ -32,16 +35,23 @@ type
     function GetCount: Integer;
     procedure RemoverItensParents;
     procedure ClearRows;
+    procedure RenderColumMode;
+    procedure RenderHorizontalMode;
+    procedure CreateVerticalRows;
+    procedure CreateHorizontalRows;
   public
     constructor Create(AContainer: TScrollBox);
     destructor Destroy; override;
     procedure AddItem(AItem: TFrame);
+    procedure Close;
     procedure Clear;
     procedure Render;
     property Visible: Boolean read GetVisbile write SetVisible;
     property LoadingScreen: TForm read FLoadingScreen write FLoadingScreen;
     property Count: Integer read GetCount;
-
+    property Enable: Boolean read FEnable write FEnable;
+    property LargeItens: Boolean read FLargeItens write FLargeItens;
+    property GridRowStyle: TGridRowStyle read FGridRowStyle write FGridRowStyle;
   end;
 
 implementation
@@ -74,6 +84,11 @@ begin
   FRows.Clear;
 end;
 
+procedure TGrid.Close;
+begin
+  Enable := False;
+end;
+
 constructor TGrid.Create(AContainer: TScrollBox);
 begin
   FContainer := AContainer;
@@ -81,30 +96,48 @@ begin
   FItens := TListItens.Create(True);
   FRows := TObjectList<TRow>.Create(True);
 
-  FAutoSize := False;
-  FLazyLoading := False;
   FhasItemPropsLoad := False;
   FLoadingScreen := nil;
+  FEnable := True;
+  FLargeItens := False;
+  FGridRowStyle := gsInLine;
+end;
+
+procedure TGrid.CreateHorizontalRows;
+begin
+
 end;
 
 procedure TGrid.CreateNescessariesRows;
+begin
+
+end;
+
+procedure TGrid.CreateVerticalRows;
 var
   RowsToAdd, I: Integer;
   FRow: TRow;
 begin
-  if FRows.Count < RownsNeeded then
+  if FGridStyle = gsVertical then
   begin
-    RowsToAdd := RownsNeeded - FRows.Count;
-    for I := 1 to RowsToAdd do
+
+    if FRows.Count < RownsNeeded then
     begin
-      FRow := GetNewRow;
+      RowsToAdd := RownsNeeded - FRows.Count;
+      for I := 1 to RowsToAdd do
+      begin
+        FRow := GetNewRow;
 
-      FRows.Add(FRow);
+        FRows.Add(FRow);
 
-      FContainer.InsertControl(FRow.Row);
+        FContainer.InsertControl(FRow.Row);
 
+      end;
+
+      OrganizeContainer;
     end;
   end;
+
 end;
 
 destructor TGrid.Destroy;
@@ -196,14 +229,23 @@ begin
   if FhasItemPropsLoad then
     Exit;
 
-  NumItens := ItensPerRow;
+  if not LargeItens then
+  begin
+    NumItens := ItensPerRow;
 
-  NescessarieWidth := Floor(FItens[0].Width * NumItens);
-  AvailableSize := FContainer.Width - NescessarieWidth;
-  MarginForItem := Floor(AvailableSize / NumItens);
-  MarginForSide := Floor(MarginForItem / 2);
-  FItensProps.MarginLeft := MarginForSide;
-  FItensProps.MarginRight := MarginForSide;
+    NescessarieWidth := Floor(FItens[0].Width * NumItens);
+    AvailableSize := FContainer.Width - NescessarieWidth;
+    MarginForItem := Floor(AvailableSize / NumItens);
+    MarginForSide := Floor(MarginForItem / 2);
+
+    FItensProps.MarginLeft := MarginForSide;
+    FItensProps.MarginRight := MarginForSide;
+  end
+  else
+  begin
+    FItensProps.MarginLeft := FItens[0].Margins.Left;
+    FItensProps.MarginRight := FItens[0].Margins.Right;
+  end;
 
   FhasItemPropsLoad := True;
 end;
@@ -239,18 +281,44 @@ begin
 end;
 
 procedure TGrid.Render;
-var
-  I, StartIndex, EndIndex, NumItens, TotalItems: Integer;
-  X: Integer;
+
 begin
+
+  if not Enable then
+    Exit;
+
+  if FItens.Count = 0 then
+    Exit;
+
   StartLoading;
   Application.ProcessMessages;
 
   ClearRows;
-
   CreateNescessariesRows;
   LoadItemProps;
 
+  case FGridStyle of
+    gsHorizontal:
+      RenderHorizontalMode;
+
+    gsVertical:
+      RenderColumMode;
+  end;
+
+  Application.ProcessMessages;
+  StopLoading;
+end;
+
+procedure TGrid.RenderHorizontalMode;
+begin
+
+end;
+
+procedure TGrid.RenderColumMode;
+var
+  I, StartIndex, EndIndex, NumItens, TotalItems: Integer;
+  X: Integer;
+begin
   NumItens := ItensPerRow;
   TotalItems := FItens.Count;
 
@@ -273,9 +341,6 @@ begin
       FRows[I].AddItem(FItens[X], FItensProps);
     end;
   end;
-
-  Application.ProcessMessages;
-  StopLoading;
 end;
 
 function TGrid.RownsNeeded: Integer;

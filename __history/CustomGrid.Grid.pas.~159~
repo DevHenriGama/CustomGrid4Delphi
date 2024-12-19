@@ -99,23 +99,22 @@ end;
 
 procedure TCustomGrid.ConfigureScrollBars;
 begin
-  // Configurar os ranges das barras de rolagem
-  if FGridRowStyle = gsInLine then
-    FContainer.HorzScrollBar.Range := Max(RowWidth, FContainer.ClientWidth)
-  else
-    FContainer.VertScrollBar.Range := Max(RowHeigth, FContainer.ClientHeight);
 
-  // Controlar visibilidade das barras
+  if FGridRowStyle = gsInLine then
+    FContainer.HorzScrollBar.Range := RowWidth
+  else
+    FContainer.VertScrollBar.Range := RowHeigth;
+
   if not ShowScrollBars then
   begin
     FContainer.HorzScrollBar.Visible := False;
     FContainer.VertScrollBar.Visible := False;
-  end
-  else
-  begin
-    FContainer.HorzScrollBar.Visible := RowWidth > FContainer.ClientWidth;
-    FContainer.VertScrollBar.Visible := RowHeigth > FContainer.ClientHeight;
+    Exit;
   end;
+
+  FContainer.HorzScrollBar.Visible := RowWidth > FContainer.Width;
+  FContainer.VertScrollBar.Visible := RowHeigth > FContainer.Height;
+
 end;
 
 procedure TCustomGrid.ContainerMouseWheel(Sender: TObject; Shift: TShiftState;
@@ -128,8 +127,12 @@ begin
   if FGridRowStyle = gsInLine then
   begin
     // Rolar horizontalmente
-    NewPosition := FContainer.HorzScrollBar.Position -
-      (WheelDelta div 120 * ScrollStep);
+    if FShowScrollBars then
+      NewPosition := FContainer.HorzScrollBar.Position -
+        (WheelDelta div 120 * ScrollStep)
+    else
+      NewPosition := FContainer.HorzScrollBar.Position -
+        WheelDelta div 120 * 10;
 
     // Garantir que a posição não extrapole os limites
     NewPosition := Max(0, Min(NewPosition, FContainer.HorzScrollBar.Range -
@@ -139,8 +142,12 @@ begin
   else
   begin
     // Rolar verticalmente
-    NewPosition := FContainer.VertScrollBar.Position -
-      (WheelDelta div 120 * ScrollStep);
+    if FShowScrollBars then
+      NewPosition := FContainer.VertScrollBar.Position -
+        (WheelDelta div 120 * ScrollStep)
+    else
+      NewPosition := FContainer.VertScrollBar.Position -
+        WheelDelta div 120 * 10;
 
     // Garantir que a posição não extrapole os limites
     NewPosition := Max(0, Min(NewPosition, FContainer.VertScrollBar.Range -
@@ -385,7 +392,7 @@ procedure TCustomGrid.RenderInLineMode;
 var
   I: Integer;
 begin
-  for I := 0 to FItens.Count - 1 do
+  for I := FItens.Count - 1 downto 0 do
   begin
     FRows.First.AddItem(FItens[I], FItensProps);
   end;

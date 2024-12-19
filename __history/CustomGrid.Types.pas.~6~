@@ -8,7 +8,7 @@ uses
 type
   TListItens = TObjectList<TFrame>;
 
-  TGridRowStyle = (gsInLine, gsInColum);
+  TRowStyle = (gsInLine, gsInColum);
 
 implementation
 

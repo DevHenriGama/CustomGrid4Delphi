@@ -7,7 +7,7 @@ uses
 
 type
 
-  TGrid = class
+  TCustomGrid = class
   private
     FItens: TListItens;
     FRows: TObjectList<TRow>;
@@ -19,6 +19,9 @@ type
     FLazyLoading: Boolean;
     FLoadingScreen: TForm;
     FSettingUpLoading: Boolean;
+    FEnable: Boolean;
+    FLargeItens: Boolean;
+    FGridRowStyle: TGridRowStyle;
     function ItensPerRow: Integer;
     function RownsNeeded: Integer;
     function GetNewRow: TRow;
@@ -32,16 +35,25 @@ type
     function GetCount: Integer;
     procedure RemoverItensParents;
     procedure ClearRows;
+    procedure RenderColumMode;
+    procedure RenderInLineMode;
+    procedure CreateInColumRows;
+    procedure CreateInLineRows;
+    procedure ConfigureScrollBars;
+    function ItemWidth: Integer;
   public
     constructor Create(AContainer: TScrollBox);
     destructor Destroy; override;
     procedure AddItem(AItem: TFrame);
+    procedure Close;
     procedure Clear;
     procedure Render;
     property Visible: Boolean read GetVisbile write SetVisible;
     property LoadingScreen: TForm read FLoadingScreen write FLoadingScreen;
     property Count: Integer read GetCount;
-
+    property Enable: Boolean read FEnable write FEnable;
+    property LargeItens: Boolean read FLargeItens write FLargeItens;
+    property GridRowStyle: TGridRowStyle read FGridRowStyle write FGridRowStyle;
   end;
 
 implementation
@@ -51,12 +63,12 @@ uses
 
 { TGrid }
 
-procedure TGrid.AddItem(AItem: TFrame);
+procedure TCustomGrid.AddItem(AItem: TFrame);
 begin
   FItens.Add(AItem);
 end;
 
-procedure TGrid.Clear;
+procedure TCustomGrid.Clear;
 begin
   StartLoading;
   Application.ProcessMessages;
@@ -68,26 +80,59 @@ begin
   StopLoading;
 end;
 
-procedure TGrid.ClearRows;
+procedure TCustomGrid.ClearRows;
 begin
   RemoverItensParents;
   FRows.Clear;
 end;
 
-constructor TGrid.Create(AContainer: TScrollBox);
+procedure TCustomGrid.Close;
+begin
+  Enable := False;
+end;
+
+procedure TCustomGrid.ConfigureScrollBars;
+begin
+  if FGridRowStyle = gsInLine then
+  begin
+    FContainer.HorzScrollBar.Visible := True;
+    FContainer.VertScrollBar.Visible := False;
+
+  end;
+
+end;
+
+constructor TCustomGrid.Create(AContainer: TScrollBox);
 begin
   FContainer := AContainer;
 
   FItens := TListItens.Create(True);
   FRows := TObjectList<TRow>.Create(True);
 
-  FAutoSize := False;
-  FLazyLoading := False;
   FhasItemPropsLoad := False;
   FLoadingScreen := nil;
+  FEnable := True;
+  FLargeItens := False;
+  FGridRowStyle := gsInColum;
 end;
 
-procedure TGrid.CreateNescessariesRows;
+procedure TCustomGrid.CreateInLineRows;
+begin
+  FRows.Add(GetNewRow);
+  FContainer.InsertControl(FRows.First.Row);
+end;
+
+procedure TCustomGrid.CreateNescessariesRows;
+begin
+  case FGridRowStyle of
+    gsInLine:
+      CreateInLineRows;
+    gsInColum:
+      CreateInColumRows;
+  end;
+end;
+
+procedure TCustomGrid.CreateInColumRows;
 var
   RowsToAdd, I: Integer;
   FRow: TRow;
@@ -109,7 +154,7 @@ begin
   end;
 end;
 
-destructor TGrid.Destroy;
+destructor TCustomGrid.Destroy;
 begin
   inherited;
 
@@ -122,17 +167,17 @@ begin
     FLoadingScreen.Free;
 end;
 
-function TGrid.GetCount: Integer;
+function TCustomGrid.GetCount: Integer;
 begin
   Result := FItens.Count;
 end;
 
-function TGrid.GetVisbile: Boolean;
+function TCustomGrid.GetVisbile: Boolean;
 begin
   Result := FContainer.Visible;
 end;
 
-function TGrid.GetNewRow: TRow;
+function TCustomGrid.GetNewRow: TRow;
 begin
   if FRowHeight = 0 then
     FRowHeight := FItens[0].Height;
@@ -140,7 +185,15 @@ begin
   Result := TRow.Create(FContainer, FRowHeight);
 end;
 
-function TGrid.ItensPerRow: Integer;
+function TCustomGrid.ItemWidth: Integer;
+begin
+  with FItens.First do
+  begin
+    Result := Width + Margins.Left + Margins.Right;
+  end;
+end;
+
+function TCustomGrid.ItensPerRow: Integer;
 var
   FItemSize, FQuant: Integer;
 begin
@@ -151,7 +204,7 @@ begin
 
 end;
 
-procedure TGrid.StartLoading;
+procedure TCustomGrid.StartLoading;
 begin
   // Desabilita o Container
   Visible := False;
@@ -181,7 +234,7 @@ begin
   FLoadingScreen.Show;
 end;
 
-procedure TGrid.StopLoading;
+procedure TCustomGrid.StopLoading;
 begin
   Visible := True;
 
@@ -189,7 +242,7 @@ begin
     FLoadingScreen.Close;
 end;
 
-procedure TGrid.LoadItemProps;
+procedure TCustomGrid.LoadItemProps;
 var
   NescessarieWidth, AvailableSize, MarginForItem, MarginForSide,
     NumItens: Integer;
@@ -198,19 +251,28 @@ begin
   if FhasItemPropsLoad then
     Exit;
 
-  NumItens := ItensPerRow;
+  if not LargeItens then
+  begin
+    NumItens := ItensPerRow;
 
-  NescessarieWidth := Floor(FItens[0].Width * NumItens);
-  AvailableSize := FContainer.Width - NescessarieWidth;
-  MarginForItem := Floor(AvailableSize / NumItens);
-  MarginForSide := Floor(MarginForItem / 2);
-  FItensProps.MarginLeft := MarginForSide;
-  FItensProps.MarginRight := MarginForSide;
+    NescessarieWidth := Floor(FItens[0].Width * NumItens);
+    AvailableSize := FContainer.Width - NescessarieWidth;
+    MarginForItem := Floor(AvailableSize / NumItens);
+    MarginForSide := Floor(MarginForItem / 2);
+
+    FItensProps.MarginLeft := MarginForSide;
+    FItensProps.MarginRight := MarginForSide;
+  end
+  else
+  begin
+    FItensProps.MarginLeft := FItens[0].Margins.Left;
+    FItensProps.MarginRight := FItens[0].Margins.Right;
+  end;
 
   FhasItemPropsLoad := True;
 end;
 
-procedure TGrid.OrganizeContainer;
+procedure TCustomGrid.OrganizeContainer;
 var
   I: Integer;
 
@@ -232,7 +294,7 @@ begin
 
 end;
 
-procedure TGrid.RemoverItensParents;
+procedure TCustomGrid.RemoverItensParents;
 var
   I: Integer;
 begin
@@ -240,19 +302,47 @@ begin
     FItens[I].Parent := nil;
 end;
 
-procedure TGrid.Render;
-var
-  I, StartIndex, EndIndex, NumItens, TotalItems: Integer;
-  X: Integer;
+procedure TCustomGrid.Render;
+
 begin
+
+  if not Enable or FItens.Count = 0 then
+    Exit;
+
   StartLoading;
   Application.ProcessMessages;
 
   ClearRows;
-
   CreateNescessariesRows;
   LoadItemProps;
 
+  case FGridRowStyle of
+    gsInLine:
+      RenderInLineMode;
+
+    gsInColum:
+      RenderColumMode;
+  end;
+
+  Application.ProcessMessages;
+  StopLoading;
+end;
+
+procedure TCustomGrid.RenderInLineMode;
+var
+  I: Integer;
+begin
+  for I := FItens.Count - 1 downto 0 do
+  begin
+    FRows.First.AddItem(FItens[I], FItensProps);
+  end;
+end;
+
+procedure TCustomGrid.RenderColumMode;
+var
+  I, StartIndex, EndIndex, NumItens, TotalItems: Integer;
+  X: Integer;
+begin
   NumItens := ItensPerRow;
   TotalItems := FItens.Count;
 
@@ -275,17 +365,14 @@ begin
       FRows[I].AddItem(FItens[X], FItensProps);
     end;
   end;
-
-  Application.ProcessMessages;
-  StopLoading;
 end;
 
-function TGrid.RownsNeeded: Integer;
+function TCustomGrid.RownsNeeded: Integer;
 begin
   Result := Ceil(FItens.Count / ItensPerRow);
 end;
 
-procedure TGrid.SetVisible(const Value: Boolean);
+procedure TCustomGrid.SetVisible(const Value: Boolean);
 begin
   FContainer.Visible := Value;
 end;
