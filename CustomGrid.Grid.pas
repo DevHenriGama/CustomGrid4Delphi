@@ -99,11 +99,6 @@ end;
 
 procedure TCustomGrid.ConfigureScrollBars;
 begin
-  // Configurar os ranges das barras de rolagem
-  if FGridRowStyle = gsInLine then
-    FContainer.HorzScrollBar.Range := Max(RowWidth, FContainer.ClientWidth)
-  else
-    FContainer.VertScrollBar.Range := Max(RowHeigth, FContainer.ClientHeight);
 
   // Controlar visibilidade das barras
   if not ShowScrollBars then
@@ -116,39 +111,38 @@ begin
     FContainer.HorzScrollBar.Visible := RowWidth > FContainer.ClientWidth;
     FContainer.VertScrollBar.Visible := RowHeigth > FContainer.ClientHeight;
   end;
+
+  // Configurar os ranges das barras de rolagem
+  if FGridRowStyle = gsInLine then
+    FContainer.HorzScrollBar.Range := RowWidth
+  else
+    FContainer.VertScrollBar.Range := RowHeigth;
 end;
 
 procedure TCustomGrid.ContainerMouseWheel(Sender: TObject; Shift: TShiftState;
   WheelDelta: Integer; MousePos: TPoint; var Handled: Boolean);
-const
-  ScrollStep = 20; // Define um valor padrão para o deslocamento
-var
-  NewPosition: Integer;
 begin
+  // Shift pressionado = scroll horizontal
   if FGridRowStyle = gsInLine then
   begin
-    // Rolar horizontalmente
-    NewPosition := FContainer.HorzScrollBar.Position -
-      (WheelDelta div 120 * ScrollStep);
-
-    // Garantir que a posição não extrapole os limites
-    NewPosition := Max(0, Min(NewPosition, FContainer.HorzScrollBar.Range -
-      FContainer.ClientWidth));
-    FContainer.HorzScrollBar.Position := NewPosition;
+    if WheelDelta > 0 then
+      FContainer.HorzScrollBar.Position :=
+        FContainer.HorzScrollBar.Position - 20
+    else
+      FContainer.HorzScrollBar.Position :=
+        FContainer.HorzScrollBar.Position + 20;
   end
-  else
+  else // Sem Shift = scroll vertical
   begin
-    // Rolar verticalmente
-    NewPosition := FContainer.VertScrollBar.Position -
-      (WheelDelta div 120 * ScrollStep);
-
-    // Garantir que a posição não extrapole os limites
-    NewPosition := Max(0, Min(NewPosition, FContainer.VertScrollBar.Range -
-      FContainer.ClientHeight));
-    FContainer.VertScrollBar.Position := NewPosition;
+    if WheelDelta > 0 then
+      FContainer.VertScrollBar.Position :=
+        FContainer.VertScrollBar.Position - 20
+    else
+      FContainer.VertScrollBar.Position :=
+        FContainer.VertScrollBar.Position + 20;
   end;
 
-  Handled := True; // Indicar que o evento foi tratado
+  Handled := True; // Indica que o evento foi tratado
 end;
 
 constructor TCustomGrid.Create(AContainer: TScrollBox);
@@ -270,6 +264,7 @@ begin
     begin
       BorderStyle := bsNone;
       Caption := 'Loading...';
+      Parent := FContainer.Parent;
     end;
     FSettingUpLoading := True;
   end;
@@ -424,7 +419,7 @@ function TCustomGrid.RowHeigth: Integer;
 begin
   With FRows.First.Row do
   begin
-    Result := FRows.Count * (Height + Margins.Top + Margins.Bottom);
+    Result := FRows.Count * Height;
   end;
 end;
 
