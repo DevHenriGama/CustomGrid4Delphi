@@ -254,6 +254,8 @@ begin
   // Desabilita o Container
   Visible := False;
 
+  Application.ProcessMessages;
+
   if not Assigned(FLoadingScreen) then
     Exit;
 
@@ -264,17 +266,9 @@ begin
     begin
       BorderStyle := bsNone;
       Caption := 'Loading...';
-      Parent := FContainer.Parent;
+      WindowState := wsMaximized;
     end;
     FSettingUpLoading := True;
-  end;
-
-  with FLoadingScreen do
-  begin
-    Left := FContainer.Left;
-    Top := FContainer.Top;
-    Width := FContainer.Width;
-    Height := FContainer.Height;
   end;
 
   FLoadingScreen.Show;
@@ -283,6 +277,7 @@ end;
 procedure TCustomGrid.StopLoading;
 begin
   Visible := True;
+  Application.ProcessMessages;
 
   if Assigned(FLoadingScreen) then
     FLoadingScreen.Close;
