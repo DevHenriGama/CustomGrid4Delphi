@@ -14,16 +14,15 @@ type
     FRows: TObjectList<TRow>;
     FContainer: TScrollBox;
     FRowHeight: Integer;
-    FAutoSize: Boolean;
     FItensProps: TItemProps;
     FhasItemPropsLoad: Boolean;
-    FLazyLoading: Boolean;
     FLoadingScreen: TForm;
     FSettingUpLoading: Boolean;
     FEnable: Boolean;
     FLargeItens: Boolean;
     FGridRowStyle: TGridRowStyle;
     FShowScrollBars: Boolean;
+    FAutoReleaseItens: Boolean;
     procedure ContainerMouseWheel(Sender: TObject; Shift: TShiftState;
       WheelDelta: Integer; MousePos: TPoint; var Handled: Boolean);
     function ItensPerRow: Integer;
@@ -46,8 +45,11 @@ type
     procedure ConfigureScrollBars;
     function RowWidth: Integer;
     function RowHeigth: Integer;
+    procedure InitializeComponent;
   public
-    constructor Create(AContainer: TScrollBox);
+    constructor Create(AContainer: TScrollBox); overload;
+    constructor Create(AContainer: TScrollBox;
+      AutoReleaseItens: Boolean); overload;
     destructor Destroy; override;
     procedure AddItem(AItem: TFrame);
     procedure Close;
@@ -60,6 +62,8 @@ type
     property LargeItens: Boolean read FLargeItens write FLargeItens;
     property GridRowStyle: TGridRowStyle read FGridRowStyle write FGridRowStyle;
     property ShowScrollBars: Boolean read FShowScrollBars write FShowScrollBars;
+    property AutoReleaseItens: Boolean read FAutoReleaseItens
+      write FAutoReleaseItens;
   end;
 
 implementation
@@ -71,6 +75,9 @@ uses
 
 procedure TCustomGrid.AddItem(AItem: TFrame);
 begin
+  if LargeItens then
+    AItem.Width := FContainer.Width;
+
   FItens.Add(AItem);
 end;
 
@@ -153,12 +160,7 @@ begin
   FItens := TListItens.Create(True);
   FRows := TObjectList<TRow>.Create(True);
 
-  FhasItemPropsLoad := False;
-  FLoadingScreen := nil;
-  FEnable := True;
-  FLargeItens := False;
-  FGridRowStyle := gsInColum;
-  FShowScrollBars := True;
+  InitializeComponent;
 end;
 
 procedure TCustomGrid.CreateInLineRows;
@@ -175,6 +177,19 @@ begin
     gsInColum:
       CreateInColumRows;
   end;
+end;
+
+constructor TCustomGrid.Create(AContainer: TScrollBox;
+  AutoReleaseItens: Boolean);
+begin
+  FContainer := AContainer;
+  FContainer.OnMouseWheel := ContainerMouseWheel;
+
+  FItens := TListItens.Create(AutoReleaseItens);
+  FRows := TObjectList<TRow>.Create(True);
+
+  FAutoReleaseItens := AutoReleaseItens;
+  InitializeComponent;
 end;
 
 procedure TCustomGrid.CreateInColumRows;
@@ -238,6 +253,16 @@ begin
   end;
 end;
 
+procedure TCustomGrid.InitializeComponent;
+begin
+  FhasItemPropsLoad := False;
+  FLoadingScreen := nil;
+  FEnable := True;
+  FLargeItens := False;
+  FGridRowStyle := gsInColum;
+  FShowScrollBars := True;
+end;
+
 function TCustomGrid.ItensPerRow: Integer;
 var
   FItemSize, FQuant: Integer;
@@ -245,6 +270,7 @@ begin
   FItemSize := FItens[0].Width + FItens[0].Margins.Right + FItens[0]
     .Margins.Left;
 
+  // BUG HERE -- Aqui possui um bug de quando o item tem o size maior que o container
   Result := Floor(FContainer.Width / FItemSize);
 
 end;
